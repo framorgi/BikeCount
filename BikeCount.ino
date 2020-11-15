@@ -844,3 +844,13 @@ void SwapFreq(uint8_t *radioStateVectorPtr)
     break;
   }
 }
+// *************************************************************
+//   Read()
+//   Analog read from pressure sensor
+// *************************************************************
+float Read(uint8_t *radioStateVectorPtr)
+{
+
+
+  return read
+}
