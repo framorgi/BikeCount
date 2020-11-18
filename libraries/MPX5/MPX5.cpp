@@ -1,72 +1,152 @@
 /*
-** Driver for the Freescale MPX5xxx family of pressure sensors.
-**
-** http://www.freescale.com/
+** Driver for  MPX5 family of pressure sensors.
 */
-#ifndef MPX5xxx_h
-#define MPX5xxx_h
+#include "MPX5.h"
 
-#include <Arduino.h>
+MPX5::MPX5(byte devType, byte pin)
+{
+  _devType = devType;
+  _pin = pin;
 
-#include "../Common/DEBUG.h"
+  analogReference(DEFAULT);
+  
+}
 
-#ifndef A2D_FULL_SCALE
-#define A2D_FULL_SCALE 1024
-#endif // A2D_FULL_SCALE
-#ifndef VSS
-#define VSS 5.0
-#endif // VSS
+MPX5::MPX5(byte devType, byte pin, byte refType)
+{
+  _devType = devType;
+  _pin = pin;
 
-#define MPX5010 0
-#define MPX5100 1
-#define MPX5700 2
+  switch (refType)
+  {
+  case DEFAULT:
+    _aRefVolts = 5.0;
+    break;
+  case EXTERNAL:
+    /*
+    ** Maybe this should be an error since this form does not allow you
+    ** to specify the voltage. On the other hand, perhaps we should assume
+    ** that 3.3 V would be logical...
+    */
+    _aRefVolts = 3.3;
+    break;
+  case INTERNAL:
+    _aRefVolts = 1.1;
+    break;
+  }
+  analogReference(refType);
+}
+
+MPX5::MPX5(byte devType, byte pin, byte refType, float aRefVolts)
+{
+  _devType = devType;
+  _pin = pin;
+
+  switch (refType)
+  {
+  case DEFAULT:
+    _aRefVolts = 5.0;
+    break;
+  case INTERNAL:
+    _aRefVolts = 1.1;
+    break;
+  case EXTERNAL:
+    _aRefVolts = aRefVolts;
+    break;
+  }
+  analogReference(refType);
+}
 
 /*
-** For the through hole, dual-port versions (6 in-line pins) the reference side
-** of the part is the one on which the device number is printed. Pin one is
-** usually on the left (but see the data sheet for some of the other parts it is
-** on the right and the surface mount parts have a different pin layout). There
-** appears to be a notch in pin one on many (all?) of the packages.
-**
-** Pin assignments:
-** - pin 1: Vout
-** - pin 2: GND
-** - pin 3: Vss
-** - pin 4-6: no connection
-**
-** Transfer functions and error calcualtions are described in MPX5xxx.cpp.
+** Manually set the device offset. Should it return anything? Previous value of the offset,
+** or if called with no value, should it return the offset?
 */
 
-class MPX5xxx {
+float MPX5::calibrate()
+{
+  //Assuming reading is zero!
+  //Average offset in 10 reading
+  for (int i = 0; i < 10; i++)
+  {
+    _Voffset += (analogRead(_pin) * _aRefVolts) / A2D_FULL_SCALE;
+  }
+  return _Voffset = _Voffset / 10;
+}
 
- public:
-  MPX5xxx(byte devType, byte pin);
-  MPX5xxx(byte devType, byte pin, byte refType);
-  MPX5xxx(byte devType, byte pin, byte refType, float aRefVolts);
-  float autoCalibrate();	// Automatically determine and set offset.
-  void  calibrate(float counts);	// Manually set the offset.
-  float read();
-  float pointAverage(byte samples, int msDelay);
-  float rollingAverage(byte samples);
-  float error();
+float MPX5::read()
+{
+  return convert(analogRead(_pin));
+}
+/*
+float MPX5::pointAverage(byte samples, int msDelay)
+{
+  long readings = 0;
+  float average;
 
- private:
-  /*
-   * Full scale output voltage is nominally 4.7 V, but it may go as high
-   * as 4.925 V. So to support the full range of an MPX5xxx family device
-   * an analog reference voltage of 5.0 V is required. However if the
-   * application does not require the full range of the device a lower
-   * AREF voltage can be used with the benefit of having more resolution
-   * in the active range.
-   */
-  float _aRefVolts;
-  byte  _devType;		// Device id, should be enum.
-  float _Voffset;		// The voltage offset when a zero reading is expected.
-  byte  _pin;
-  float _transferConstant;	// Device specific constant for transfer function.
+  for (byte i = 0; i < samples; i++) {
+    readings += analogRead(_pin);
+    delay(msDelay);
+  }
+  average = readings / samples;
 
-  float convert(float reading);
-  float supplyVoltage();	// Get the value of Vss
-};
+  return convert(average);
+}
 
-#endif // MPX5xxx_h
+float MPX5::rollingAverage(byte samples)
+{
+  static int readings[20];	      // XXX - for a max of 20.
+  static byte cur = 0;
+  static byte allValid = 0;
+  float average = 0;
+
+  readings[cur++ % samples] = analogRead(_pin);
+
+  //DEBUG10("readings[] = ", readings[0], ", " , readings[1], ", " , readings[2], ", "  , readings[3], ", "  , readings[4]);
+
+  if (allValid) {
+    for (byte i = 0; i < samples; i++) {
+      average += readings[i];
+    }
+    average /= samples;
+  } else {
+    for (byte i = 0; i < cur; i++) {
+      average += readings[i];
+    }
+    average /= cur;
+    if (cur == samples) {
+      allValid = 1;
+    }
+  }
+  return convert(average);
+}
+
+/*
+** Return a symetric error value for the current operating condition of the sensor.
+*/
+
+/*
+** Private functions.
+*/
+
+float MPX5::convert(float reading)
+{
+  float transferConstant;
+  float Vout = (reading * _aRefVolts) / A2D_FULL_SCALE;
+
+  switch (_devType)
+  {
+  case MPX5010:
+    transferConstant = 0.0900000;
+    break;
+  case MPX5100:
+    transferConstant = 0.0090000;
+    break;
+  case MPX5700:
+    transferConstant = 0.0012858;
+    break;
+  }
+
+  float pressure = (Vout - _Voffset) / (transferConstant * supplyVoltage());
+
+  return pressure;
+}

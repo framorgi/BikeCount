@@ -16,6 +16,7 @@ String ProjVersion = "0.1\n";
 #include "LedControl.h"   // MAX7219 library, http://www.wayoda.org/arduino/ledcontrol/index.html
 #include "ClickEncoder.h" // Rotary switch encoder lib, https://github.com/0xPIT/encoder
 #include <TimerOne.h>
+#include "MPX5.h"      // custom library  
 
 // *************************************************************
 //  ~~~~~~~ CONSTANTS DEFINITION SECTION ~~~~~~~
@@ -23,7 +24,11 @@ String ProjVersion = "0.1\n";
 // *************************************************************
 
 // *************************************************************
-//  MAX7219 DISPLAY Constant setting
+//  ADC Constants setting
+// *************************************************************
+#define ADC_PIN A0
+// *************************************************************
+//  MAX7219 DISPLAY Constants setting
 // *************************************************************
 #define LED_INTENSITY 5
 #define MAX_NUMCHIPS 2
@@ -34,12 +39,8 @@ String ProjVersion = "0.1\n";
 #define ENC_E1_PIN_A 2
 #define ENC_E1_PIN_B 3
 //#define ENC_E1_PIN_BTN 4
-#define SW_S1_PIN A0
-#define SW_S2_PIN A1
-#define SW_S3_PIN A2
-#define SW_S4_PIN A3
-#define SW_S5_PIN A4
-#define SW_S6_PIN A5
+#define SW_S1_PIN A1
+#define SW_S2_PIN A2
 #define SW_ST1_PIN 9
 #define MAX_PIN_MOSI 12
 #define MAX_PIN_CS 10
@@ -47,14 +48,20 @@ String ProjVersion = "0.1\n";
 #define LED_PIN 13
 
 // *************************************************************
-//  ~~~~~~~ STRUCTS & VAR  DEFINITION SECTION ~~~~~~~
+//  ~~~~~~~ STRUCTS, CLASS & VAR  DEFINITION SECTION ~~~~~~~
 //
 // *************************************************************
 
 // *************************************************************
-//  MAX7219 definition
-// ~~~~~~~ MAX7219
-// ~~~~~~~ MAX7219 Driver class  We need 4 8-seg display
+// Pressure sensor  Instance 
+// 
+// *************************************************************
+
+MPX5 pr= MPX5(MPX5010,ADC_PIN,DEFAULT)
+
+// *************************************************************
+// LedControl  Instance 
+// 
 // *************************************************************
 LedControl lc = LedControl(MAX_PIN_MOSI, MAX_PIN_CK, MAX_PIN_CS, MAX_NUMCHIPS);
 

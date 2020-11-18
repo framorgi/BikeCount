@@ -38,12 +38,12 @@ class MPX5 {
   MPX5(byte devType, byte pin);
   MPX5(byte devType, byte pin, byte refType);
   MPX5(byte devType, byte pin, byte refType, float aRefVolts);
-  float autoCalibrate();	// Automatically determine and set offset.
-  void  calibrate(float counts);	// Manually set the offset.
+  //float autoCalibrate();	// Automatically determine and set offset.
+  //void  calibrate(float counts);	// Manually set the offset.
   float read();
-  float pointAverage(byte samples, int msDelay);
-  float rollingAverage(byte samples);
-  float error();
+  //float pointAverage(byte samples, int msDelay);
+  //float rollingAverage(byte samples);
+  //float error();
 
  private:
   /*
@@ -56,12 +56,12 @@ class MPX5 {
    */
   float _aRefVolts;
   
-  float _Voffset;		// The voltage offset when a zero reading is expected.
+  float _Voffset;// The voltage offset when a zero reading is expected.
   byte  _pin;
   float _transferConstant;	// Device specific constant for transfer function.
 
   float convert(float reading);
-  float supplyVoltage();	// Get the value of Vss
+  float _supplyVoltage;	// Get the value of Vss
 };
 
 #endif // MPX5_h
